@@ -1,4 +1,6 @@
 # 判断素数####
+library(dplyr)
+
 is.prime1 <- function(n) {
   if (n <= 1) {
     return(FALSE)
@@ -19,6 +21,7 @@ is.prime2 <- function(n) {
   }
   ifelse(0 %in% c(n %% c(2:ceiling(sqrt(n)))), FALSE, TRUE)
 }
+
 
 
 # 找出素数####
@@ -95,6 +98,7 @@ find.prime <- function(x, n) {
 # find.prime(1,1000)
 
 
+
 # 用时情况####
 count <- function(x, n, m) {
   times <- numeric(m)
@@ -113,6 +117,7 @@ count <- function(x, n, m) {
 }
 
 # times <- count(1,1000,100)
+
 
 
 # 平均用时####
@@ -144,5 +149,36 @@ mtimes <- mcount(1,1000,100)
 
 
 
+# 集群运算####
+library(parallel)
 
+pmcount <- function(x, i, m) {
+  mtimes <- matrix(NA, nrow = m, ncol = i-1)
+  
+  total.time <- 0
+  
+  cl <- makeCluster(detectCores())
+  clusterExport(cl, list("x", "m", "count"))
+  
+  for (n in 2:i) {
+    start.time <- Sys.time()
+    
+    cat(paste("Finding primes in", n, "takes:\n"))
+    mtimes[, n-1] <- unlist(mclapply(1:m, function(j) count(x, n, 1), mc.cores = length(cl)))
+    
+    end.time <- Sys.time()
+    time.diff <- as.numeric(difftime(end.time, start.time, units = "secs"))
+    total.time <- total.time + time.diff
+    hours <- floor(total.time / 3600)
+    minutes <- floor((total.time %% 3600) / 60)
+    seconds <- round(total.time %% 60, 2)
+    
+    cat(paste0("NO.", n, " ", m, "-times-loop takes"), round(time.diff, 2), "sec & costs", hours, "h", minutes, "m", seconds, "s\n")
+  }
+  
+  stopCluster(cl)
+  
+  return(mtimes)
+}
 
+pmtimes <- pmcount(1,1000,100)

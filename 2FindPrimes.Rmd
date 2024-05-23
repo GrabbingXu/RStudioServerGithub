@@ -9,12 +9,9 @@ output: html_document
 ## Preparation
 
 ```{r pressure, echo=FALSE}
-# 加载依赖####
+# 判断素数####
 library(dplyr)
 
-
-
-# 判断素数####
 is.prime1 <- function(n) {
   if (n <= 1) {
     return(FALSE)
