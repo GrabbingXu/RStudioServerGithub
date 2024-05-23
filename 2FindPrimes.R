@@ -158,12 +158,17 @@ pmcount <- function(x, i, m) {
   total.time <- 0
   
   cl <- makeCluster(detectCores())
-  clusterExport(cl, list("x", "m", "count"))
+  clusterExport(cl = cl, 
+                varlist = list("count", "x", "i", "m"), 
+                envir=environment())
   
   for (n in 2:i) {
     start.time <- Sys.time()
     
     cat(paste("Finding primes in", n, "takes:\n"))
+    clusterApply(cl, 1:m, function(j) {
+      cat(count(x, n, 1), "\n")
+    })
     mtimes[, n-1] <- unlist(mclapply(1:m, function(j) count(x, n, 1), mc.cores = length(cl)))
     
     end.time <- Sys.time()
