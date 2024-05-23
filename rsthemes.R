@@ -1,5 +1,3 @@
-
-
 ## Install package rsthemes
 install.packages("devtools")
 
