@@ -122,15 +122,15 @@ count <- function(x, n, m) {
 
 # 平均用时####
 mcount <- function(x, i, m) {
-  mtimes <- matrix(NA, nrow = m, ncol = i-1)
+  mtimes <- matrix(NA, nrow = m, ncol = i)
   
   total.time = 0
-  for (n in 2:i) {
+  for (n in 1:i) {
     
     start.time <- Sys.time()
     
     cat(paste("Finding primes in", n, "takes:\n"))
-    mtimes[,n-1] <- count(x, n, m)
+    mtimes[,n] <- count(x, n, m)
     
     end.time <- Sys.time()
     time.diff <- as.numeric(difftime(end.time, start.time, units = "secs"))
@@ -154,7 +154,7 @@ mcount <- function(x, i, m) {
 library(parallel)
 
 pmcount <- function(x, i, m) {
-  pmtimes <- matrix(NA, nrow = m, ncol = i-1)
+  pmtimes <- matrix(NA, nrow = m, ncol = i)
   
   total.time <- 0
   
@@ -163,10 +163,10 @@ pmcount <- function(x, i, m) {
   #               varlist = list("count","x","i","m"),
   #               envir=environment())
   
-  for (n in 2:i) {
+  for (n in 1:i) {
     start.time <- Sys.time()
     
-    pmtimes[, n-1] <- unlist(mclapply(1:m, function(j) count(x, n, 1), mc.cores = length(cl)))
+    pmtimes[, n] <- unlist(mclapply(1:m, function(j) count(x, n, 1), mc.cores = length(cl)))
     
     end.time <- Sys.time()
     time.diff <- as.numeric(difftime(end.time, start.time, units = "secs"))
@@ -189,82 +189,102 @@ pmcount <- function(x, i, m) {
 
 
 # 大数运算####
-lmcount <- function(x, i, m) {
-  j = (i /  1000) %>% floor()
-  k = (i %% 1000)
-  
+# 迭代优化！
+# 目标逻辑--in i {1:m save 1.RDS; (1+m):(2m) save 2.RDS etc.}
+# 目前逻辑--in i {1:m save 1.RDS; 1:2m save 2.RDS etc.}
+# 应从mcount源码开始修改，从n in 1:i开始定义i=j*h+k
+lmcount <- function(x, i, m, h) {
+  j = (i /  h) %>% floor()
+  k = (i %% h)
+  pb <- txtProgressBar(min = 0, max = i, style = 3)
+
   if (j>0) {
     for (f in 1:j) {
-      mcount(x, f*1000, m) %>% saveRDS(., paste0("lmtimes",f,".RDS"))
-      gc()
+      mcount(x, f*h, m) %>% saveRDS(., paste0("lmtimes",f,".RDS"))
+      message("Saving lmtimes", f, ".RDS now")
+      setTxtProgressBar(pb, f*h)
+      Sys.sleep(1)
     }
   }
-  
+
   if (k>0) {
     mcount(x, k, m) %>% saveRDS(., paste0("lmtimes",j+1,".RDS"))
-    gc()
+    message("Saving lmtimes", j+1, ".RDS now")
+    setTxtProgressBar(pb, j*h+k)
+    Sys.sleep(1)
+    k = 1
   }
-  
-  cat("Output", j+k, "lmtimes.RDS")
+
+  close(pb)
+  message("Compution completed and Saved ", j+k, " lmtimes.RDS in total")
+  gc()
 }
 
-lmcount(1,1000^3,100)
+# lmcount(1,1000*10,100,1000)
 
 
 
 # 集群大数运算####
-# 优化不够，离散监控，CPU爆炸
+# 基于大数运算增加集群分布
+# 大数运算代码结构有变化，尚未同步至此：
+# //1 if(k)嵌套至if(j)中
+# //2 新定义参数h决定从i中每计算h个值时保存RDS
+# 优化不够，还要再改
+# 离散监控，CPU爆炸
+# cat()print()message()warning()stop()
+# 中间输出未正确写入集群（当前写法适用于i<=1000，i>1000时触发BUG）
 library(parallel)
 
 plmcount <- function(x, i, m) {
   j = (i /  1000) %>% floor()
   k = (i %% 1000)
-  
+
   total.time <- 0
-  
+
   cl <- makeCluster(detectCores())
-  
+
   if (j>0) {
     start.time <- Sys.time()
-    
+
     for (f in 1:j) {
       mclapply(1:m, function(j) mcount(x, f*1000, 1), mc.cores = length(cl)) %>% saveRDS(., paste0("plmtimes",f,".RDS"))
-      
+
       end.time <- Sys.time()
       time.diff <- as.numeric(difftime(end.time, start.time, units = "secs"))
       total.time <- total.time + time.diff
       hours <- floor(total.time / 3600)
       minutes <- floor((total.time %% 3600) / 60)
       seconds <- round(total.time %% 60, 2)
-      
-      cat(paste0("NO.", f, " ", m, "-loop took"), round(time.diff,2), "sec\n", 
+
+      cat(paste0("NO.", f, " ", m, "-loop took"), round(time.diff,2), "sec\n",
           paste0("It cost ", hours, "h ", minutes, "m ", seconds, "s\n"))
-      
+
       gc()
     }
   }
-  
+
   if (k>0) {
     start.time <- Sys.time()
-    
+
     mclapply(1:m, function(j) mcount(x, k, 1), mc.cores = length(cl)) %>% saveRDS(., paste0("plmtimes",j+1,".RDS"))
-    
+
     end.time <- Sys.time()
     time.diff <- as.numeric(difftime(end.time, start.time, units = "secs"))
     total.time <- total.time + time.diff
     hours <- floor(total.time / 3600)
     minutes <- floor((total.time %% 3600) / 60)
     seconds <- round(total.time %% 60, 2)
-    
-    cat(paste0("NO.", j+1, " ", m, "-loop took"), round(time.diff,2), "sec\n", 
+
+    cat(paste0("NO.", j+1, " ", m, "-loop took"), round(time.diff,2), "sec\n",
         paste0("It cost ", hours, "h ", minutes, "m ", seconds, "s\n"))
-    
+
+    k = 1
     gc()
   }
-  
+
   stopCluster(cl)
-  
-  cat("Output", j+k, "plmtimes.RDS")
+
+  message("Saved ", j+k, "lmtimes.RDS in total")
 }
 
 # plmcount(1,1000,100)
