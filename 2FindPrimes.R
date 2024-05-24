@@ -139,13 +139,14 @@ mcount <- function(x, i, m) {
     minutes <- floor((total.time %% 3600) / 60)
     seconds <- round(total.time %% 60, 2)
     
-    cat(paste0("NO.", n, " ", m, "-times-loop takes"), round(time.diff,2), "sec & costs", hours, "h", minutes, "m", seconds, "s\n")
+    cat(paste0("NO.", n, " ", m, "-loop took"), round(time.diff,2), "sec\n", 
+        paste0("It cost ", hours, "h ", minutes, "m ", seconds, "s\n"))
   }
   
   return(mtimes)
 }
 
-mtimes <- mcount(1,1000,100)
+# mtimes <- mcount(1,1000,100)
 
 
 
@@ -153,23 +154,19 @@ mtimes <- mcount(1,1000,100)
 library(parallel)
 
 pmcount <- function(x, i, m) {
-  mtimes <- matrix(NA, nrow = m, ncol = i-1)
+  pmtimes <- matrix(NA, nrow = m, ncol = i-1)
   
   total.time <- 0
   
   cl <- makeCluster(detectCores())
-  clusterExport(cl = cl, 
-                varlist = list("count", "x", "i", "m"), 
-                envir=environment())
+  # clusterExport(cl = cl,
+  #               varlist = list("count","x","i","m"),
+  #               envir=environment())
   
   for (n in 2:i) {
     start.time <- Sys.time()
     
-    cat(paste("Finding primes in", n, "takes:\n"))
-    clusterApply(cl, 1:m, function(j) {
-      cat(count(x, n, 1), "\n")
-    })
-    mtimes[, n-1] <- unlist(mclapply(1:m, function(j) count(x, n, 1), mc.cores = length(cl)))
+    pmtimes[, n-1] <- unlist(mclapply(1:m, function(j) count(x, n, 1), mc.cores = length(cl)))
     
     end.time <- Sys.time()
     time.diff <- as.numeric(difftime(end.time, start.time, units = "secs"))
@@ -178,12 +175,103 @@ pmcount <- function(x, i, m) {
     minutes <- floor((total.time %% 3600) / 60)
     seconds <- round(total.time %% 60, 2)
     
-    cat(paste0("NO.", n, " ", m, "-times-loop takes"), round(time.diff, 2), "sec & costs", hours, "h", minutes, "m", seconds, "s\n")
+    cat(paste0("NO.", n, " ", m, "-loop took"), round(time.diff,2), "sec\n", 
+        paste0("It cost ", hours, "h ", minutes, "m ", seconds, "s\n"))
   }
   
   stopCluster(cl)
   
-  return(mtimes)
+  return(pmtimes)
 }
 
-pmtimes <- pmcount(1,1000,100)
+# pmtimes <- pmcount(1,1000,100)
+
+
+
+# 大数运算####
+lmcount <- function(x, i, m) {
+  j = (i /  1000) %>% floor()
+  k = (i %% 1000)
+  
+  if (j>0) {
+    for (f in 1:j) {
+      mcount(x, f*1000, m) %>% saveRDS(., paste0("lmtimes",f,".RDS"))
+      gc()
+    }
+  }
+  
+  if (k>0) {
+    mcount(x, k, m) %>% saveRDS(., paste0("lmtimes",j+1,".RDS"))
+    gc()
+  }
+  
+  cat("Output", j+k, "lmtimes.RDS")
+}
+
+lmcount(1,1000^3,100)
+
+
+
+# 集群大数运算####
+# 优化不够，离散监控，CPU爆炸
+library(parallel)
+
+plmcount <- function(x, i, m) {
+  j = (i /  1000) %>% floor()
+  k = (i %% 1000)
+  
+  total.time <- 0
+  
+  cl <- makeCluster(detectCores())
+  
+  if (j>0) {
+    start.time <- Sys.time()
+    
+    for (f in 1:j) {
+      mclapply(1:m, function(j) mcount(x, f*1000, 1), mc.cores = length(cl)) %>% saveRDS(., paste0("plmtimes",f,".RDS"))
+      
+      end.time <- Sys.time()
+      time.diff <- as.numeric(difftime(end.time, start.time, units = "secs"))
+      total.time <- total.time + time.diff
+      hours <- floor(total.time / 3600)
+      minutes <- floor((total.time %% 3600) / 60)
+      seconds <- round(total.time %% 60, 2)
+      
+      cat(paste0("NO.", f, " ", m, "-loop took"), round(time.diff,2), "sec\n", 
+          paste0("It cost ", hours, "h ", minutes, "m ", seconds, "s\n"))
+      
+      gc()
+    }
+  }
+  
+  if (k>0) {
+    start.time <- Sys.time()
+    
+    mclapply(1:m, function(j) mcount(x, k, 1), mc.cores = length(cl)) %>% saveRDS(., paste0("plmtimes",j+1,".RDS"))
+    
+    end.time <- Sys.time()
+    time.diff <- as.numeric(difftime(end.time, start.time, units = "secs"))
+    total.time <- total.time + time.diff
+    hours <- floor(total.time / 3600)
+    minutes <- floor((total.time %% 3600) / 60)
+    seconds <- round(total.time %% 60, 2)
+    
+    cat(paste0("NO.", j+1, " ", m, "-loop took"), round(time.diff,2), "sec\n", 
+        paste0("It cost ", hours, "h ", minutes, "m ", seconds, "s\n"))
+    
+    gc()
+  }
+  
+  stopCluster(cl)
+  
+  cat("Output", j+k, "plmtimes.RDS")
+}
+
+# plmcount(1,1000,100)
+
+
+
+# 查看内存####
+# print(sapply(ls(), function(x) {object.size(get(x))}))
+# 释放内存
+# gc()
