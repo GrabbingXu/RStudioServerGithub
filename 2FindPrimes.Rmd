@@ -107,9 +107,10 @@ find.prime <- function(x, n) {
 }
 
 # find.prime(1,1000)
+```
 
 
-
+```{r}
 # 用时情况####
 count <- function(x, n, m) {
   times <- numeric(m)

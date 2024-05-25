@@ -220,7 +220,7 @@ lmcount <- function(x, i, m, h) {
   gc()
 }
 
-# lmcount(1,1000*10,100,1000)
+# lmcount(1,1000^3,100,1000)
 
 
 
