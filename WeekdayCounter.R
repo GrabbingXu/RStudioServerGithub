@@ -234,12 +234,12 @@ fun_time <- function(dates, fun, fun_name) {
     
     # 记录到报告
     report$time[i] <- round(elapsed, 6)
-    report$times[i] <- round(total_time, 2)
+    report$times[i] <- round(total_time, 6)
     
     # 更新进度条
     pb$tick(tokens = list(
       current_time = format(Sys.time(), "%H:%M:%S"),
-      avg_time = round(mean(report$time[1:i]), 4)
+      avg_time = round(mean(report$time[1:i]), 6)
     ))
   }
   
@@ -267,6 +267,4 @@ report_ref <- count_ref(dates)
 head(report_kl)
 head(report_ts)
 head(report_ref)
-
-# 计划任务####
 
