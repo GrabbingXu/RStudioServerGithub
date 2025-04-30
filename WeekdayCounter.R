@@ -137,7 +137,7 @@ fun_time_scale <- function(data, models, times) {
   return(result)
 }
 
-result <- fun_time_scale(data=dates,models=c(fun_ts,fun_ref),times=1)
+result <- fun_time_scale(data=dates,models=c(fun_ts,fun_ref),times=1000)
 
 # 数据可视化####
 # 将结果矩阵转换为长格式数据框
