@@ -87,7 +87,7 @@ fun_time <- function(data, models, times, progress = TRUE) {
   return(as.data.frame(result))
 }
 
-fun_time(data=dates, models=c(fun_ts,fun_ref), times=100)
+fun_time(data=dates, models=c(fun_ts,fun_ref), times=10)
 
 # 不同数据规模下运算用时测试####
 fun_time_scale <- function(data, models, times) {
@@ -137,7 +137,7 @@ fun_time_scale <- function(data, models, times) {
   return(result)
 }
 
-result <- fun_time_scale(data=dates,models=c(fun_ts,fun_ref),times=100)
+result <- fun_time_scale(data=dates,models=c(fun_ts,fun_ref),times=1)
 
 # 数据可视化####
 # 将结果矩阵转换为长格式数据框
