@@ -26,7 +26,7 @@ p1 <- ggplot(df, aes(x = length, y = number_of_cds,
                     color = factor(type, levels = c("SAG", "MAG", "WGS")))) +
   geom_point(size = 3, alpha = 0.6) +
   guides(color = guide_legend(override.aes = list(alpha = 1, size = 5))) +
-  geom_smooth(method = "lm", color = "red", linetype = "dashed") +
+  geom_smooth(formula = "y ~ x", method = "lm", color = "red", linetype = "dashed") +
   scale_color_manual(values = c("#1F77B4", "#FF7F0E", "#3F3F3F"),
                      labels = new_legend) +
   xlim(3*10^5, 3*10^7) +
@@ -49,7 +49,7 @@ p1 <- ggplot(df, aes(x = length, y = number_of_cds,
         legend.margin = margin(3, 15, 3, 10),
         legend.text = element_text(size = 14),
         legend.key.spacing.y = unit(0.2, 'cm'),
-        legend.position = c(0.05, 0.95), 
+        legend.position.inside = c(0.05, 0.95), 
         legend.justification = c(0,1),
         legend.background = element_rect(fill = 'white', colour = '#D6D6D6',
                                          linewidth = 1))
@@ -79,7 +79,7 @@ my_comparisons <- list(c("WGS","MAG"),
 p3 <- ggplot(df, aes(x = factor(type, levels = c("SAG", "MAG", "WGS")),
                      y = residuals_log, 
                      fill = factor(type, levels = c("SAG", "MAG", "WGS")))) +
-  stat_boxplot(geom = "errorbar", width = 0.4, size = 1, color = "#3F3F3F") +
+  stat_boxplot(geom = "errorbar", width = 0.4, linewidth = 1, color = "#3F3F3F") +
   geom_boxplot(outlier.fill = "#3F3F3F", outlier.shape = 23, outlier.size = 1, linewidth=0.5) +
   geom_signif(comparisons = my_comparisons,
               test = "wilcox.test", 
