@@ -3,7 +3,9 @@ library(scales)
 library(ggsignif)
 library(ggExtra)
 library(grid)
+library(rstudioapi)
 
+dirname(getSourceEditorContext()$path) %>% setwd()
 
 df <- read.csv("data.csv")
 
