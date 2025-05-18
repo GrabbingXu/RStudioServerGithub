@@ -33,7 +33,7 @@ fun_buffon <- function(seed=123, N=1e6, l=1, d=1) {
   )
 }
 
-fun_buffon(123,1e7)
+fun_buffon(123,1e7) + gc()
 
 # 增加随机种子数####
 fun_seed <- function(seeds=seq(100), N=1e6, l=1, d=1, progress = TRUE) {
